@@ -20,9 +20,9 @@ workingdir_1 = [PALA_data_folder 'DS_10_100HZ\'];
 workingdir_2 = [PALA_data_folder 'DS_4_250HZ\'];
 workingdir_3 = [PALA_data_folder 'DS_2_500HZ\'];
 save_dir = [PALA_save_folder];
-save_dir_1 = [save_dir '\US_10_100HZ'];mkdir(save_dir_1)
-save_dir_2 = [save_dir '\US_4_250HZ'];mkdir(save_dir_2)
-save_dir_3 = [save_dir '\US_2_500HZ'];mkdir(save_dir_3)
+save_dir_1 = [save_dir '\US_10_100HZ_IMQ'];mkdir(save_dir_1)
+save_dir_2 = [save_dir '\US_4_250HZ_IMQ'];mkdir(save_dir_2)
+save_dir_3 = [save_dir '\US_2_500HZ_IMQ'];mkdir(save_dir_3)
 
 zero_save_dir = [zero_save_folder];
 zero_save_dir_1 = [zero_save_dir '\zero_US_10_100HZ'];mkdir(zero_save_dir_1)
@@ -36,9 +36,9 @@ cd(workingdir)
 Ori_low_datas_100 = dir([workingdir_1 '*.mat']);
 Ori_low_datas_250 = dir([workingdir_2 '*.mat']);
 Ori_low_datas_500 = dir([workingdir_3 '*.mat']);
-Ori_low_datas_250 = Ori_low_datas_250(1:8);
-Ori_low_datas_100 = Ori_low_datas_100(1:8);
-Ori_low_datas_500 = Ori_low_datas_500(1:8);
+% Ori_low_datas_250 = Ori_low_datas_250(1:8);
+% Ori_low_datas_100 = Ori_low_datas_100(1:8);
+% Ori_low_datas_500 = Ori_low_datas_500(1:8);
 %size(Ori_low_datas_100);
 
 % Start algorithms
@@ -47,14 +47,14 @@ Z = 1000;
 cd(currentPath)
 
 % epsilon shape parameter
-epsilon = 100;
+epsilon = 1000; %IMQ:250,500->64,
 
 % m condition value
 m = 12;
 % Start algorithms for each file
-%process_files(Ori_low_datas_100, 100, save_dir_1, epsilon, 'MQ', 11);
-process_files(Ori_low_datas_250, 250, save_dir_2, epsilon, 'MQ', 5);
-%process_files(Ori_low_datas_500, 500, save_dir_3, epsilon, 'MQ', 3);
+process_files(Ori_low_datas_100, 100, save_dir_1, epsilon, 'MQ', 11);
+% process_files(Ori_low_datas_250, 250, save_dir_2, epsilon, 'IMQ', 5);
+% process_files(Ori_low_datas_500, 500, save_dir_3, epsilon, 'IMQ', 3);
 %data = load([Ori_low_datas_100(1).folder filesep Ori_low_datas_100(1).name]);
 %data = data.data_100Hz;
 %size(data)
@@ -149,7 +149,14 @@ end
 %% PROCESS
 function process_files(file_list, type, save_dir, epsilon, RBF_type, target_frame)
     data_500 = load([file_list(1).folder filesep file_list(1).name]);
-    data_500 = data_500.data_250Hz;
+    switch type
+        case 100
+            data_500 = data_500.data_100Hz;
+        case 250
+            data_500 = data_500.data_250Hz;
+        case 500
+            data_500 = data_500.data_500Hz;
+    end
     Phi = base_construct(data_500(1,:,1:2),RBF_type, epsilon);
     H  = h_construction(data_500(1,:,1:2), target_frame, RBF_type, epsilon);
     for i = 1:numel(file_list)
@@ -198,12 +205,12 @@ function Phi = base_construct(Data, RBF_Type, epsilon)
             end
         end
     end
-    disp(['Size of Phi: ', num2str(size(Phi))]);
-    disp(['Rank of Phi: ', num2str(rank(Phi))]);
-    disp(['Cond of Phi: ', num2str(cond(Phi))]);
-    Phi = (Phi + 0.0001* eye(size(Phi))); %zhengzehua
-    disp(['new Rank of Phi: ', num2str(rank(Phi))]);
-    disp(['Cond of Phi: ', num2str(cond(Phi))]);
+    disp(['Size of Phi: ', num2str(size(Phi))])
+    disp(['Rank of Phi: ', num2str(rank(Phi))]) %要不是无穷
+    disp(['Cond of Phi: ', num2str(cond(Phi))]) %最低是1
+    Phi = (Phi + 0.0001* eye(size(Phi))); %正则化
+    disp(['new Rank of Phi: ', num2str(rank(Phi))])
+    disp(['Cond of Phi: ', num2str(cond(Phi))])
 end
 
 %% F(IVTS) Construction
